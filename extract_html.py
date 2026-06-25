@@ -69,7 +69,7 @@ def get_images_from_html(html: str, base_url: str):
             link = parser.urljoin(base_url, parsed_link.path)
 
         unnormalized_link_list.append(link)
-        return unnormalized_link_list
+    return unnormalized_link_list
     
 class PageData(TypedDict):
     heading: str
