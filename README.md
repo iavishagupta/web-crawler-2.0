@@ -226,9 +226,11 @@ Enforces a minimum delay between requests to the same domain. Defaults to 1 seco
 Follows redirects manually instead of letting `aiohttp` handle them automatically. At each hop: re-runs SSRF validation, checks the redirect doesn't cross the crawl domain boundary, enforces a 5-hop maximum. Prevents SSRF-via-redirect (a server redirecting to `169.254.169.254` after passing the initial URL check).
 
 ### DNS rebinding protection (`ssrf_guard.py + redirect_guard.py`)
-Standard SSRF protection has a race condition: the hostname is validated against a blocklist at check time, but the actual TCP connection is made moments later — after a new DNS lookup. An attacker who controls a domain can pass the initial check (DNS resolves to a public IP) then immediately flip DNS to point at 169.254.169.254 before the connection is made.
-The crawler closes this window with IP pinning. validate_url_safe() resolves the hostname to an IP, validates it, and returns the raw IP URL alongside the original hostname. The actual HTTP request goes directly to that IP — DNS is never consulted again for that hop. The Host header is set manually so the server responds correctly.
-This applies on every redirect hop too. redirect_guard.py calls validate_url_safe() on each redirect target and uses the returned IP URL for the next request. A safe origin URL cannot redirect its way to an internal address.
+
+Standard SSRF protection has a race condition: the hostname is validated against a blocklist at check time, but the actual TCP connection is made moments later — after a new DNS lookup. An attacker who controls a domain can pass the initial check (DNS resolves to a public IP) then immediately flip DNS to point at `169.254.169.254` before the connection is made.
+The crawler closes this window with IP pinning. `validate_url_safe()` resolves the hostname to an IP, validates it, and returns the raw IP URL alongside the original hostname. The actual HTTP request goes directly to that IP — DNS is never consulted again for that hop. The Host header is set manually so the server responds correctly.
+This applies on every redirect hop too. `redirect_guard.py` calls `validate_url_safe()` on each redirect target and uses the returned IP URL for the next request. A safe origin URL cannot redirect its way to an internal address.              
+
 ---
 
 ## Reliability
