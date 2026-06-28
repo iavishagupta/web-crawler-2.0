@@ -10,3 +10,4 @@ wheels/
 .venv
 
 obsolete_code.py
+crawl.py
