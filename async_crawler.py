@@ -88,7 +88,6 @@ class Worker:
         storage: Optional[CrawlStorage] = None,
         ttl_days: int = 7,
         shutdown_event: asyncio.Event | None = None,
-        max_depth: int = 0,   # 0 = unlimited
     ):
         self.id = worker_id
         self.queue = queue
@@ -102,7 +101,6 @@ class Worker:
         self.storage = storage
         self.ttl_days = ttl_days
         self.shutdown_event = shutdown_event or asyncio.Event()
-        self.max_depth = max_depth
 
         # Pre-bind worker_id — every log call from this worker carries it
         self.log = get_logger("worker", worker_id=worker_id)
@@ -341,7 +339,6 @@ class AsyncCrawler:
         storage: Optional[CrawlStorage] = None,
         ttl_days: int = 7,
         progress_every: int = 10,
-        max_depth: int = 0,   # 0 = unlimited
     ):
         self.base_url = base_url
         self.base_domain = get_domain(base_url)
@@ -355,7 +352,6 @@ class AsyncCrawler:
         self.storage = storage
         self.ttl_days = ttl_days
         self.progress_every = progress_every
-        self.max_depth = max_depth
         self.session: aiohttp.ClientSession | None = None
 
     async def __aenter__(self):
@@ -391,7 +387,6 @@ class AsyncCrawler:
             base_url=self.base_url,
             base_domain=self.base_domain,
             max_pages=self.max_pages,
-            max_depth=self.max_depth if self.max_depth > 0 else "unlimited",
             max_concurrency=self.max_concurrency,
             rate_limit_delay=self.rate_limit_delay,
             ttl_days=self.ttl_days,
@@ -464,7 +459,6 @@ class AsyncCrawler:
                 storage=self.storage,
                 ttl_days=self.ttl_days,
                 shutdown_event=shutdown_event,
-                max_depth=self.max_depth,
             )
             for i in range(self.max_concurrency)
         ]
@@ -516,7 +510,6 @@ async def crawl_site_async(
     storage: Optional[CrawlStorage] = None,
     ttl_days: int = 7,
     progress_every: int = 10,
-    max_depth: int = 0,
 ) -> dict:
     async with AsyncCrawler(
         base_url,
@@ -529,6 +522,5 @@ async def crawl_site_async(
         storage=storage,
         ttl_days=ttl_days,
         progress_every=progress_every,
-        max_depth=max_depth,
     ) as crawler:
         return await crawler.crawl()

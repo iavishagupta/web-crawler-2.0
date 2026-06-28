@@ -36,6 +36,10 @@ def _resolve_host(hostname: str) -> list[str]:
         return[]
 
 def validate_url_safe(url: str) -> None:
+    """
+    Validates a URL against SSRF and returns a (safe_ip_url, host_header) tuple.
+    Raises SSRFError if the URL violates security policies.
+    """
     parsed = parser.urlparse(url)
 
     if parsed.scheme not in _ALLOWED_SCHEMES:
@@ -67,15 +71,22 @@ def validate_url_safe(url: str) -> None:
     if not is_bare_ip:
         resolved_ips = _resolve_host(hostname)
         if not resolved_ips:
-            raise SSRFError(
-                f"Hostname '{hostname}' could not be resolved: {url!r}"
-            )
+            raise SSRFError(f"Hostname '{hostname}' could not be resolved: {url!r}")
         for ip in resolved_ips:
             if _is_private_ip(ip):
-                raise SSRFError(
-                    f"Hostname '{hostname}' resolves to private IP {ip}: {url!r}"
-                )
+                raise SSRFError(f"Hostname '{hostname}' resolves to private IP {ip}: {url!r}")
 
+        chosen_ip = resolved_ips[0]
+        if ":" in chosen_ip and not chosen_ip.startswith("["):
+            chosen_ip = f"[{chosen_ip}]"
+
+        # Replace only the netloc, not the whole URL string
+        new_netloc = parsed.netloc.replace(hostname, chosen_ip, 1)
+        safe_ip_url = parser.urlunparse(parsed._replace(netloc=new_netloc))
+        return safe_ip_url, hostname
+
+    # Bare public IP — return as-is
+    return url, hostname
 
 #-----------------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
@@ -95,8 +106,8 @@ if __name__ == "__main__":
     print("=== Safe URLs (should pass) ===")
     for u in safe_urls:
         try:
-            validate_url_safe(u)
-            print(f"  PASS  {u}")
+            safe_url, og_hostname = validate_url_safe(u)
+            print(f"  PASS  {u}\n{safe_url}\n{og_hostname}")
         except SSRFError as e:
             print(f"  FAIL  {u}  →  {e}")
  

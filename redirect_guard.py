@@ -29,12 +29,16 @@ async def get_html_with_guard(
         allow_cross_domain: bool = False,
         user_agent: str = USER_AGENT,
 ) -> tuple[str, str]:
-    validate_url_safe(url)
-
-    current_url = url
+    try:
+        safe_ip_url, original_host = validate_url_safe(url)
+    except SSRFError as e:
+        raise RedirectError(f"URL blocked by SSRF Guard: {e}") from e
+    
+    current_url = safe_ip_url
     redirect_chain: list[str] = [url]
-    headers = {"User-Agent":user_agent}
+    headers = {"User-Agent":user_agent, "Host":original_host}
 
+    logical_url = url
     for hop in range (MAX_REDIRECTS + 1):
         async with session.get(
             current_url,
@@ -59,7 +63,7 @@ async def get_html_with_guard(
                     )
                 
                 html = await res.text()
-                return html, current_url
+                return html, logical_url
             
             if hop == MAX_REDIRECTS:
                 raise RedirectError(
@@ -77,11 +81,14 @@ async def get_html_with_guard(
             next_url = parser.urljoin(current_url, location)
 
             try:
-                validate_url_safe(next_url)
+                safe_next_url, next_host = validate_url_safe(next_url)
             except SSRFError as e:
-                raise RedirectError(
-                    f"Redirect target blocked by SSRF Guard: {e}"
-                ) from e
+                raise RedirectError(f"Redirect target blocked by SSRF Guard: {e}") from e
+
+            redirect_chain.append(next_url)
+            current_url = safe_next_url
+            logical_url = next_url
+            headers = {"User-Agent": user_agent, "Host": next_host}
             
             if not allow_cross_domain and base_domain:
                 next_domain = parser.urlparse(next_url).netloc
@@ -92,7 +99,4 @@ async def get_html_with_guard(
                         f"(redirected to {next_url!r})"
                     )
                 
-            redirect_chain.append(next_url)
-            current_url = next_url
-    
     raise RedirectError("Redirect loop terminated unexpectedly.")
