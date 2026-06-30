@@ -163,7 +163,7 @@ class CrawlStats:
             f"║  Skipped (fresh)    {self.pages_skipped_fresh:<6}  (within TTL window)          ║",
             f"║  Skipped (seen)     {self.pages_skipped_seen:<6}  (already queued/visited)     ║",
             f"║  Total errors       {self.total_errors():<6}  ({self.error_rate()*100:.1f}% error rate)            ║",
-            "╠══════════════════════════════════════════════════════════╣",
+             "╠══════════════════════════════════════════════════════════╣",
             f"║  Duration           {elapsed:.1f}s                                 ║",
             f"║  Throughput         {self.pages_per_second():.2f} pages/sec                       ║",
             f"║  Latency p50        {f'{p50:.0f}ms' if p50 else 'n/a':<8}                             ║",

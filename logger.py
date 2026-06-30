@@ -9,7 +9,7 @@ from dotenv import load_dotenv #type: ignore
 load_dotenv()
 
 def configure_logging(
-        mode: LogMode | None,
+        mode: LogMode | None = None,
         level: str = "INFO",
 ) -> None :
     mode = mode or os.environ.get("CRAWLER_LOG_MODE", "development")
@@ -52,10 +52,10 @@ def configure_logging(
         level=numeric_level,
     )
 
-def get_logger(name:str | None = None, **initital_context):
+def get_logger(name:str | None = None, **initial_context):
     log = structlog.get_logger(name)
-    if initital_context:
-        log = log.bind(**initital_context)
+    if initial_context:
+        log = log.bind(**initial_context)
     return log
 
-_log = get_logger("logger")
+_log = get_logger("logger") 

@@ -88,7 +88,6 @@ def validate_url_safe(url: str) -> None:
     # Bare public IP — return as-is
     return url, hostname
 
-#-----------------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     safe_urls = [
         "https://example.com/page",
